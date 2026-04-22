@@ -1,0 +1,166 @@
+'use server';
+
+import { Client } from '@notionhq/client';
+
+export interface NotionDatabase {
+  id: string;
+  title: string;
+}
+
+export interface NotionInvoice {
+  clientName: string;
+  clientEmail: string;
+  totalAmount: number;
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  quantity: number;
+  unitPrice: number;
+  status: 'pending' | 'paid' | 'overdue';
+  dueDate?: string;
+  issuedOn?: string;
+  notes?: string;
+}
+
+/**
+ * Fetches all databases accessible by the server-side Notion token.
+ */
+export async function getNotionDatabases(): Promise<NotionDatabase[]> {
+  const token = process.env.NOTION_API_TOKEN;
+  if (!token) {
+    throw new Error('Notion API Token is not configured on the server.');
+  }
+
+  const notion = new Client({ auth: token });
+  try {
+    const response = await notion.search({
+      filter: { property: 'object', value: 'database' },
+    });
+
+    return response.results.map((db: any) => ({
+      id: db.id,
+      title: db.title?.[0]?.plain_text || 'Untitled Database',
+    }));
+  } catch (error: any) {
+    console.error('Notion Fetch Databases Error:', error);
+    throw new Error(error.message || 'Failed to fetch Notion databases.');
+  }
+}
+
+/**
+ * Fetches and maps invoices from a specific Notion database.
+ * Optimized for the exact column names provided in the user's reference:
+ * Client Name, Email, No of products, Cost per product, Subtotal, Tax Rate, Tax Amount, Total Amount, issued date, due date, status, notes.
+ */
+export async function fetchNotionInvoices(databaseId: string): Promise<NotionInvoice[]> {
+  const token = process.env.NOTION_API_TOKEN;
+  if (!token) {
+    throw new Error('Notion API Token is not configured on the server.');
+  }
+
+  const notion = new Client({ auth: token });
+  try {
+    const response = await notion.databases.query({
+      database_id: databaseId,
+    });
+
+    return response.results.map((page: any) => {
+      const props = page.properties;
+
+      /**
+       * Helper to find a property by name with specific column priority.
+       */
+      const findProp = (keys: string[]) => {
+        const foundKey = Object.keys(props).find(k => 
+          keys.some(key => k.toLowerCase() === key.toLowerCase())
+        );
+        return foundKey ? props[foundKey] : null;
+      };
+
+      /**
+       * Extracts value from various Notion property types and cleans number strings.
+       */
+      const getValue = (prop: any): string => {
+        if (!prop) return '';
+        switch (prop.type) {
+          case 'title': return prop.title?.[0]?.plain_text || '';
+          case 'rich_text': return prop.rich_text?.[0]?.plain_text || '';
+          case 'email': return prop.email || '';
+          case 'number': return prop.number?.toString() || '0';
+          case 'select': return prop.select?.name || '';
+          case 'status': return prop.status?.name || '';
+          case 'date': return prop.date?.start || '';
+          case 'created_time': return prop.created_time || '';
+          case 'formula': 
+            if (prop.formula.type === 'number') return prop.formula.number?.toString() || '0';
+            if (prop.formula.type === 'string') return prop.formula.string || '';
+            return '';
+          default: return '';
+        }
+      };
+
+      const parseNumber = (val: string | number) => {
+        if (val === null || val === undefined) return 0;
+        const str = val.toString();
+        // Strip everything except numbers, decimal points, and minus signs
+        const cleaned = str.replace(/[^\d.-]/g, '');
+        return parseFloat(cleaned) || 0;
+      };
+
+      // 1. Client Name (Title)
+      const clientName = getValue(findProp(['Client Name', 'Name', 'Title'])) || 'Unknown Client';
+
+      // 2. Email
+      const clientEmail = getValue(findProp(['Email', 'Mail'])) || 'no-email@example.com';
+
+      // 3. No of products (Quantity)
+      const quantity = parseNumber(getValue(findProp(['No of products', 'Quantity', 'Qty']))) || 1;
+
+      // 4. Cost per product (Unit Price)
+      const unitPrice = parseNumber(getValue(findProp(['Cost per product', 'Unit Price', 'Price'])));
+
+      // 5. Subtotal
+      const subtotal = parseNumber(getValue(findProp(['Subtotal']))) || (quantity * unitPrice);
+
+      // 6. Tax Rate (%)
+      const taxRate = parseNumber(getValue(findProp(['Tax Rate', 'Tax %'])));
+
+      // 7. Tax Amount
+      const taxAmount = parseNumber(getValue(findProp(['Tax Amount']))) || (subtotal * taxRate / 100);
+
+      // 8. Total Amount
+      const totalAmount = parseNumber(getValue(findProp(['Total Amount', 'Total']))) || (subtotal + taxAmount);
+
+      // 9. Status
+      const statusRaw = getValue(findProp(['Status', 'Payment Status'])).toLowerCase();
+      let status: 'pending' | 'paid' | 'overdue' = 'pending';
+      if (statusRaw.includes('paid')) status = 'paid';
+      else if (statusRaw.includes('overdue')) status = 'overdue';
+
+      // 10. Dates
+      const issuedOn = getValue(findProp(['Issued Date', 'Created Date', 'Date']));
+      const dueDate = getValue(findProp(['Due Date', 'Deadline']));
+
+      // 11. Notes
+      const notes = getValue(findProp(['Notes', 'Description']));
+
+      return {
+        clientName,
+        clientEmail,
+        totalAmount,
+        subtotal,
+        taxRate,
+        taxAmount,
+        quantity,
+        unitPrice,
+        status,
+        dueDate,
+        issuedOn,
+        notes,
+      };
+    });
+  } catch (error: any) {
+    console.error('Notion Fetch Invoices Error:', error);
+    throw new Error(error.message || 'Failed to sync Notion data.');
+  }
+}

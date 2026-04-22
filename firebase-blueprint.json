@@ -1,0 +1,363 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents an individual user of the InvoiceFlow application. This entity stores metadata about the user and links to their associated data (clients, invoices, etc.), but does not store authentication credentials. The 'id' field corresponds to the user's unique identifier from the external authentication system (e.g., Firebase Authentication uid).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity. This ID is typically provided by the external authentication system (e.g., Firebase Auth)."
+        },
+        "email": {
+          "type": "string",
+          "description": "The primary email address of the user.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user's information was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "createdAt"
+      ]
+    },
+    "Client": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Client",
+      "type": "object",
+      "description": "Represents a client or customer for whom invoices are generated. Each client is associated with a specific user, and can have multiple invoices.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Client entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name or company name of the client."
+        },
+        "email": {
+          "type": "string",
+          "description": "The primary email address of the client.",
+          "format": "email"
+        },
+        "address": {
+          "type": "string",
+          "description": "The billing or primary physical address of the client."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The contact phone number for the client."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this client record. (Relationship: User 1:N Client)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the client record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the client record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "userId",
+        "createdAt"
+      ]
+    },
+    "Invoice": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Invoice",
+      "type": "object",
+      "description": "Represents a single invoice issued by a user to a client, detailing services or products provided, amounts, status, and payment terms.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Invoice entity."
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "A unique, human-readable invoice number for identification and tracking."
+        },
+        "issueDate": {
+          "type": "string",
+          "description": "The date when the invoice was officially issued.",
+          "format": "date"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "The date by which the payment for the invoice is expected.",
+          "format": "date"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "The total monetary amount of the invoice, calculated from all its line items."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current payment status of the invoice (e.g., 'Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any additional notes or specific instructions related to this invoice."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to the Client to whom this invoice is addressed. (Relationship: Client 1:N Invoice)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created and owns this invoice. (Relationship: User 1:N Invoice)"
+        },
+        "lastReminderSentAt": {
+          "type": "string",
+          "description": "Timestamp of when the last payment reminder was sent to the client.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the invoice record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the invoice record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "invoiceNumber",
+        "issueDate",
+        "dueDate",
+        "totalAmount",
+        "status",
+        "clientId",
+        "userId",
+        "createdAt"
+      ]
+    },
+    "InvoiceItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InvoiceItem",
+      "type": "object",
+      "description": "Represents a single line item within an invoice, detailing a specific product or service, its quantity, and price. An invoice can have multiple invoice items.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the InvoiceItem entity."
+        },
+        "invoiceId": {
+          "type": "string",
+          "description": "Reference to the Invoice this item belongs to. (Relationship: Invoice 1:N InvoiceItem)"
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the product or service provided, often suggested by the AI Invoice Content Tool."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The quantity of the item or service provided."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "The price per single unit of the item or service."
+        },
+        "lineTotal": {
+          "type": "number",
+          "description": "The total monetary amount for this specific line item (calculated as quantity * unitPrice)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the invoice item record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the invoice item record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "invoiceId",
+        "description",
+        "quantity",
+        "unitPrice",
+        "lineTotal",
+        "createdAt"
+      ]
+    },
+    "PaymentTerms": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PaymentTerms",
+      "type": "object",
+      "description": "Represents a reusable set of payment terms that can be applied to invoices. These terms can be predefined or suggested by the AI Invoice Content Tool.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PaymentTerms entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "A short, descriptive name for the payment terms (e.g., 'Net 30', 'Due on Receipt')."
+        },
+        "description": {
+          "type": "string",
+          "description": "The full, detailed text description of the payment terms, often generated or managed by the AI tool."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created or owns this set of payment terms (if they are user-specific templates). (Relationship: User 1:N PaymentTerms)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the payment terms record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the payment terms record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "userId",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores individual user profiles. The document ID (`userId`) must match the Firebase Authentication UID of the user. Only the authenticated user can read/write their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching their Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/clients/{clientId}",
+        "definition": {
+          "entityName": "Client",
+          "schema": {
+            "$ref": "#/backend/entities/Client"
+          },
+          "description": "Stores clients associated with a specific user. The `userId` from the path must match `request.auth.uid` and the `userId` field denormalized within the document for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this client."
+            },
+            {
+              "name": "clientId",
+              "description": "The unique identifier for the client record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/paymentTerms/{paymentTermsId}",
+        "definition": {
+          "entityName": "PaymentTerms",
+          "schema": {
+            "$ref": "#/backend/entities/PaymentTerms"
+          },
+          "description": "Stores user-specific payment term templates. The `userId` from the path must match `request.auth.uid` and the `userId` field denormalized within the document for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns these payment terms."
+            },
+            {
+              "name": "paymentTermsId",
+              "description": "The unique identifier for the payment terms template."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/invoices/{invoiceId}",
+        "definition": {
+          "entityName": "Invoice",
+          "schema": {
+            "$ref": "#/backend/entities/Invoice"
+          },
+          "description": "Stores invoices created by a specific user. The `userId` from the path must match `request.auth.uid` and the `userId` field denormalized within the document for authorization independence. This enables simple, secure owner-based rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this invoice."
+            },
+            {
+              "name": "invoiceId",
+              "description": "The unique identifier for the invoice document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/invoices/{invoiceId}/items/{invoiceItemId}",
+        "definition": {
+          "entityName": "InvoiceItem",
+          "schema": {
+            "$ref": "#/backend/entities/InvoiceItem"
+          },
+          "description": "Stores individual line items for a specific invoice. Includes denormalized 'userId' from the parent invoice for authorization independence, allowing direct `request.auth.uid` checks without `get()` operations on the parent invoice.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the parent invoice and this item."
+            },
+            {
+              "name": "invoiceId",
+              "description": "The unique identifier of the parent invoice."
+            },
+            {
+              "name": "invoiceItemId",
+              "description": "The unique identifier for the invoice item."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure is designed to enforce strict user data segregation and optimize security rule evaluation, adhering to all core design principles.\n\n**Authorization Independence via Denormalization:**\nEvery piece of data is nested under its owning user's path, following the pattern `/users/{userId}/[collection]/{documentId}`. Critically, for `Client`, `Invoice`, `PaymentTerms`, and `InvoiceItem` documents, the `userId` of the owning user is explicitly denormalized and stored within each document. For instance, an `InvoiceItem` document at `/users/{userId}/invoices/{invoiceId}/items/{invoiceItemId}` will contain its `userId` field (copied from its parent `Invoice`). This direct denormalization means that any security rule targeting these documents (e.g., `match /users/{userId}/invoices/{invoiceId}/items/{invoiceItemId}`) can authorize access by simply comparing `request.auth.uid` with `resource.data.userId` and `userId` from the path. This completely eliminates the need for expensive and complex `get()` calls in security rules to check parent document ownership, thereby making rules atomic, faster, and much easier to debug.\n\n**QAPs (Rules are not Filters):**\nThe structure inherently supports Queryable Access Patterns. By nesting all user-specific data under `/users/{userId}/...`, we achieve 'Structural Segregation' (Mandate B). All documents within any subcollection like `/users/{userId}/clients` or `/users/{userId}/invoices` will share the same security posture: only the authenticated user whose `uid` matches the `{userId}` in the path can access them. When a client performs a `list` operation (e.g., `db.collection('users/{current_uid}/invoices').get()`), the Firestore rules engine will automatically enforce that `{current_uid}` matches `request.auth.uid`. Since the `userId` is also denormalized within each document, the rules can further verify `resource.data.userId == request.auth.uid`. This dual check, enforced by path and denormalized field, guarantees that `list` operations will only return documents that the requesting user is explicitly authorized to see, making the structure secure and preventing over-fetching of unauthorized data."
+  }
+}
+
