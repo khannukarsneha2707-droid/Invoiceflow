@@ -8,17 +8,26 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing code' }, { status: 400 });
   }
 
+  const clientId = process.env.NOTION_CLIENT_ID;
+  const clientSecret = process.env.NOTION_CLIENT_SECRET;
+  const redirectUri = process.env.NOTION_REDIRECT_URI;
+
+  if (!clientId || !clientSecret || !redirectUri) {
+    console.error('Notion OAuth Error: Missing environment variables');
+    return NextResponse.json({ error: 'OAuth credentials not configured' }, { status: 500 });
+  }
+
   // 1. Exchange code for token
   const response = await fetch('https://api.notion.com/v1/oauth/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Basic ${Buffer.from(`${process.env.NOTION_CLIENT_ID}:${process.env.NOTION_CLIENT_SECRET}`).toString('base64')}`,
+      'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
     },
     body: JSON.stringify({
       grant_type: 'authorization_code',
       code: code,
-      redirect_uri: process.env.NOTION_REDIRECT_URI!,
+      redirect_uri: redirectUri,
     }),
   });
 
