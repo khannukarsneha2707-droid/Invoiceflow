@@ -45,17 +45,30 @@ export function NotionImportDialog() {
   const handleConnectNotion = async () => {
     setIsLoading(true);
     try {
-      const dbs = await getNotionDatabases();
-      setDatabases(dbs);
-      setStep('database');
+      const resp = await fetch('/api/notion/url');
+      const { url } = await resp.json();
+      
+      const authWindow = window.open(url, 'notion_auth', 'width=600,height=700');
+      
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+          window.removeEventListener('message', handleMessage);
+          authWindow?.close();
+          const dbs = await getNotionDatabases();
+          setDatabases(dbs);
+          setStep('database');
+          setIsLoading(false);
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
     } catch (error: any) {
+      setIsLoading(false);
       toast({
         variant: "destructive",
         title: "Connection Failed",
-        description: error.message || "Could not connect to Notion. Ensure your Workspace is shared with the integration.",
+        description: error.message || "Could not connect to Notion.",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
