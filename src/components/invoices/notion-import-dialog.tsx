@@ -49,20 +49,16 @@ export function NotionImportDialog() {
       const resp = await fetch(`/api/notion/url?userId=${user.uid}`);
       const { url } = await resp.json();
       
-      const authWindow = window.open(url, 'notion_auth', 'width=600,height=700');
+      const authWindow = window.open(url, "notionAuth", "width=600,height=700");
       
-      const handleMessage = async (event: MessageEvent) => {
-        if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-          window.removeEventListener('message', handleMessage);
-          authWindow?.close();
-          const dbs = await getNotionDatabases(user.uid);
-          setDatabases(dbs);
-          setStep('database');
+      const interval = setInterval(() => {
+        if (authWindow?.closed) {
+          clearInterval(interval);
           setIsLoading(false);
+          alert("Notion connected successfully");
+          window.location.reload();
         }
-      };
-      
-      window.addEventListener('message', handleMessage);
+      }, 1000);
     } catch (error: any) {
       setIsLoading(false);
       toast({
