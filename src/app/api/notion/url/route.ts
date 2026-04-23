@@ -1,18 +1,9 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const clientId = process.env.NOTION_CLIENT_ID;
-  const redirectUri = process.env.NOTION_REDIRECT_URI;
-  
-  console.log('DEBUG: NOTION_CLIENT_ID configured:', !!clientId);
-  
-  if (!clientId || !redirectUri) {
-      return NextResponse.json({ error: 'OAuth credentials not configured' }, { status: 500 });
-  }
-
   const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
+    client_id: process.env.NOTION_CLIENT_ID!,
+    redirect_uri: process.env.NOTION_REDIRECT_URI!,
     response_type: 'code',
     owner: 'user',
   });
