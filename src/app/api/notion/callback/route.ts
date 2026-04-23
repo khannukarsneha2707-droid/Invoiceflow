@@ -1,4 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import firebaseConfig from '../../../../../firebase-applet-config.json';
+
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -34,6 +39,19 @@ export async function GET(request: NextRequest) {
   }
 
   // TODO: Store token in Firestore securely
+  try {
+    const userId = request.nextUrl.searchParams.get('state');
+    if (userId) {
+      const db = getFirestore(app); // Import app and getFirestore
+      await setDoc(doc(db, 'users', userId, 'integrations', 'notion'), {
+        accessToken: data.access_token,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    }
+  } catch (error) {
+    console.error('Failed to store token:', error);
+  }
+
   // For now, return success page to close popup
   return new NextResponse(`
     <html>

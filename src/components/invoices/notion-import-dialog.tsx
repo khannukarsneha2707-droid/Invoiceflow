@@ -43,9 +43,10 @@ export function NotionImportDialog() {
   const firestore = useFirestore();
 
   const handleConnectNotion = async () => {
+    if (!user) return;
     setIsLoading(true);
     try {
-      const resp = await fetch('/api/notion/url');
+      const resp = await fetch(`/api/notion/url?userId=${user.uid}`);
       const { url } = await resp.json();
       
       const authWindow = window.open(url, 'notion_auth', 'width=600,height=700');
@@ -54,7 +55,7 @@ export function NotionImportDialog() {
         if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
           window.removeEventListener('message', handleMessage);
           authWindow?.close();
-          const dbs = await getNotionDatabases();
+          const dbs = await getNotionDatabases(user.uid);
           setDatabases(dbs);
           setStep('database');
           setIsLoading(false);
@@ -78,7 +79,7 @@ export function NotionImportDialog() {
     setStep('syncing');
     
     try {
-      const notionInvoices = await fetchNotionInvoices(selectedDb);
+      const notionInvoices = await fetchNotionInvoices(user.uid, selectedDb);
       const clientsRef = collection(firestore, 'users', user.uid, 'clients');
       const clientsSnapshot = await getDocs(clientsRef);
       const existingClients = clientsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));

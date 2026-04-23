@@ -1,6 +1,7 @@
 'use server';
 
 import { Client } from '@notionhq/client';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 export interface NotionDatabase {
   id: string;
@@ -25,12 +26,17 @@ export interface NotionInvoice {
 /**
  * Fetches all databases accessible by the server-side Notion token.
  */
-export async function getNotionDatabases(): Promise<NotionDatabase[]> {
-  const token = process.env.NOTION_API_TOKEN;
-  if (!token) {
-    throw new Error('Notion API Token is not configured on the server.');
+export async function getNotionToken(userId: string): Promise<string> {
+  const db = getFirestore();
+  const tokenDoc = await getDoc(doc(db, 'users', userId, 'integrations', 'notion'));
+  if (!tokenDoc.exists()) {
+    throw new Error('Notion integration not found. Please connect your Notion account.');
   }
+  return tokenDoc.data().accessToken;
+}
 
+export async function getNotionDatabases(userId: string): Promise<NotionDatabase[]> {
+  const token = await getNotionToken(userId);
   const notion = new Client({ auth: token });
   try {
     const response = await notion.search({
@@ -47,17 +53,8 @@ export async function getNotionDatabases(): Promise<NotionDatabase[]> {
   }
 }
 
-/**
- * Fetches and maps invoices from a specific Notion database.
- * Optimized for the exact column names provided in the user's reference:
- * Client Name, Email, No of products, Cost per product, Subtotal, Tax Rate, Tax Amount, Total Amount, issued date, due date, status, notes.
- */
-export async function fetchNotionInvoices(databaseId: string): Promise<NotionInvoice[]> {
-  const token = process.env.NOTION_API_TOKEN;
-  if (!token) {
-    throw new Error('Notion API Token is not configured on the server.');
-  }
-
+export async function fetchNotionInvoices(userId: string, databaseId: string): Promise<NotionInvoice[]> {
+  const token = await getNotionToken(userId);
   const notion = new Client({ auth: token });
   try {
     const response = await notion.databases.query({
