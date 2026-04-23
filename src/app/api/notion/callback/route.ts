@@ -13,8 +13,19 @@ export async function GET(request: NextRequest) {
   }
 
   // 1. Exchange code for token
+  const clientId = process.env.NOTION_CLIENT_ID;
+  const clientSecret = process.env.NOTION_CLIENT_SECRET;
+  
+  console.log("NOTION_DEBUG: Callback triggered.");
+  console.log("NOTION_DEBUG: ClientID set:", !!clientId);
+  console.log("NOTION_DEBUG: ClientSecret set:", !!clientSecret);
+
+  if (!clientId || !clientSecret) {
+    return NextResponse.json({ error: 'Missing Notion credentials in environment variables.' }, { status: 500 });
+  }
+
   const credentials = Buffer.from(
-    `${process.env.NOTION_CLIENT_ID}:${process.env.NOTION_CLIENT_SECRET}`
+    `${clientId}:${clientSecret}`
   ).toString("base64");
 
   const response = await fetch("https://api.notion.com/v1/oauth/token", {
