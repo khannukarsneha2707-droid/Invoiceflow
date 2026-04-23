@@ -25,7 +25,7 @@ export default function RootLayout({
         <FirebaseClientProvider>
           {children}
           <footer className="py-6 text-center text-sm text-muted-foreground">
-            Created by Infinix Academy
+            Created by Sadguru
           </footer>
           <Toaster />
         </FirebaseClientProvider>
