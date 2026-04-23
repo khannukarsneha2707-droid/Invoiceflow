@@ -24,6 +24,9 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <FirebaseClientProvider>
           {children}
+          <footer className="py-6 text-center text-sm text-muted-foreground">
+            Created by Infinix Academy
+          </footer>
           <Toaster />
         </FirebaseClientProvider>
       </body>
