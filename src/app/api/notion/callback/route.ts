@@ -15,12 +15,14 @@ export async function GET(request: NextRequest) {
   // 1. Exchange code for token
   const clientId = process.env.NOTION_CLIENT_ID;
   const clientSecret = process.env.NOTION_CLIENT_SECRET;
+  const redirectUri = process.env.NOTION_REDIRECT_URI;
   
-  console.log("NOTION_DEBUG: Callback triggered.");
-  console.log("NOTION_DEBUG: ClientID set:", !!clientId);
-  console.log("NOTION_DEBUG: ClientSecret set:", !!clientSecret);
+  console.log("NOTION_DEBUG: --- Token Exchange Request Data ---");
+  console.log("NOTION_DEBUG: ClientID (truncated):", clientId?.substring(0, 5) + "...");
+  console.log("NOTION_DEBUG: Redirect URI (exact):", redirectUri);
+  console.log("NOTION_DEBUG: ----------------------------------");
 
-  if (!clientId || !clientSecret) {
+  if (!clientId || !clientSecret || !redirectUri) {
     return NextResponse.json({ error: 'Missing Notion credentials in environment variables.' }, { status: 500 });
   }
 
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
     body: JSON.stringify({
       grant_type: "authorization_code",
       code: code,
-      redirect_uri: process.env.NOTION_REDIRECT_URI
+      redirect_uri: redirectUri
     })
   });
 
@@ -46,7 +48,15 @@ export async function GET(request: NextRequest) {
   console.log("NOTION TOKEN RESPONSE:", data);
 
   if (!response.ok) {
-    return NextResponse.json({ error: 'Failed to exchange token', details: data }, { status: 500 });
+    const errorDetails = {
+      message: 'Failed to exchange token',
+      rawError: data,
+      debug: {
+        sentClientId: clientId?.substring(0, 5) + "...",
+        sentRedirectUri: redirectUri,
+      }
+    };
+    return NextResponse.json({ error: errorDetails }, { status: 500 });
   }
 
   // TODO: Store token in Firestore securely
