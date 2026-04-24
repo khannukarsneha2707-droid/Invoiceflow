@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 
-export function NotionImportDialog() {
+export function NotionImportDialog({ onConnectSuccess }: { onConnectSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<'connect' | 'database' | 'syncing' | 'complete'>('connect');
   const [databases, setDatabases] = useState<NotionDatabase[]>([]);
@@ -51,12 +51,23 @@ export function NotionImportDialog() {
       
       const authWindow = window.open(url, "notionAuth", "width=600,height=700");
       
-      const interval = setInterval(() => {
+      const interval = setInterval(async () => {
         if (authWindow?.closed) {
           clearInterval(interval);
           setIsLoading(false);
-          alert("Notion connected successfully");
-          window.location.reload();
+          toast({ title: "Notion connected successfully" });
+          
+          // Fetch databases after connection
+          setIsLoading(true);
+          try {
+            const dbs = await getNotionDatabases(user.uid);
+            setDatabases(dbs);
+            setStep('database');
+          } catch (e) {
+            toast({ variant: "destructive", title: "Failed to fetch databases" });
+          } finally {
+            setIsLoading(false);
+          }
         }
       }, 1000);
     } catch (error: any) {
@@ -87,6 +98,11 @@ export function NotionImportDialog() {
       const batch = writeBatch(firestore);
       oldImportsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
       await batch.commit();
+
+      // Store selected databaseId
+      await setDocumentNonBlocking(doc(firestore, 'users', user.uid, 'integrations', 'notion'), {
+        databaseId: selectedDb
+      }, { merge: true });
 
       let count = 0;
       for (const inv of notionInvoices) {

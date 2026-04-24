@@ -1,9 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { initializeApp, getApps } from 'firebase/app';
-import firebaseConfig from '../../../../../firebase-applet-config.json';
-
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+import { db } from '@/lib/firebaseAdmin';
+import admin from 'firebase-admin';
+import { Client } from '@notionhq/client';
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -59,18 +57,45 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: errorDetails }, { status: 500 });
   }
 
-  // TODO: Store token in Firestore securely
+  // Store token and find/store databaseId in Firestore
   try {
     const userId = request.nextUrl.searchParams.get('state');
-    if (userId) {
-      const db = getFirestore(app); // Import app and getFirestore
-      await setDoc(doc(db, 'users', userId, 'integrations', 'notion'), {
-        accessToken: data.access_token,
-        updatedAt: serverTimestamp(),
+    
+    if (!userId) {
+      throw new Error("Missing userId (state)");
+    }
+
+    console.log("USER ID:", userId);
+    console.log("TOKEN:", data.access_token);
+    console.log("SAVING TO FIRESTORE...");
+    
+    // 1. Save Token
+    await db.collection('users').doc(userId).collection('integrations').doc('notion').set({
+      accessToken: data.access_token,
+      workspaceId: data.workspace_id,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    // 2. Search for Invoices database
+    const notion = new Client({ auth: data.access_token });
+    const response = await notion.search({
+      filter: { property: 'object', value: 'database' },
+    });
+
+    const dbMatch = response.results.find((nDb: any) => 
+      nDb.title?.[0]?.plain_text?.toLowerCase()?.includes('invoices')
+    );
+
+    if (dbMatch) {
+      console.log("DATABASE ID FOUND:", dbMatch.id);
+      await db.collection('users').doc(userId).collection('integrations').doc('notion').set({
+        databaseId: dbMatch.id,
       }, { merge: true });
+    } else {
+      console.warn("No Invoices database found in Notion.");
     }
   } catch (error) {
-    console.error('Failed to store token:', error);
+    console.error('Failed to store token or find database:', error);
   }
 
   // For now, return success page to close popup

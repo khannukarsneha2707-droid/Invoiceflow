@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { 
   Table, 
@@ -100,9 +100,46 @@ export default function InvoicesPage() {
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
+  const [notionInvoices, setNotionInvoices] = useState<any[]>([]);
   const { data: invoices, isLoading } = useCollection(invoicesQuery);
   const { data: clients } = useCollection(clientsQuery);
   const { data: profile } = useDoc(profileRef);
+
+  const notionIntegrationRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid, 'integrations', 'notion');
+  }, [firestore, user]);
+  const { data: notionIntegration } = useDoc(notionIntegrationRef);
+  const notionConnected = !!notionIntegration;
+
+  const fetchInvoices = async () => {
+    console.log("FETCHING NOTION DATA");
+    console.log("USER:", user?.uid);
+    console.log("NOTION INTEGRATION:", notionIntegration);
+    
+    if (!user) {
+      console.error("Missing user");
+      return;
+    }
+
+    const res = await fetch("/api/notion/query?userId=" + user.uid);
+
+    console.log("RESPONSE STATUS:", res.status);
+
+    const data = await res.json();
+
+    console.log("NOTION DATA:", data);
+
+    setNotionInvoices(data.invoices || []);
+  };
+
+  useEffect(() => {
+    if (notionConnected) {
+      fetchInvoices();
+    }
+  }, [notionConnected]);
+
+  const allInvoices = [...(invoices || []), ...notionInvoices.map((inv, i) => ({ ...inv, id: `notion-${i}` }))];
 
   const confirmDelete = () => {
     if (!firestore || !user || !idToDelete) return;
@@ -170,12 +207,12 @@ export default function InvoicesPage() {
     }
   };
 
-  const filteredInvoices = invoices?.filter(inv => {
+  const filteredInvoices = allInvoices.filter(inv => {
     const matchesSearch = inv.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          inv.clientEmail.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClient = clientFilter === 'all' || inv.clientId === clientFilter;
     return matchesSearch && matchesClient;
-  }) || [];
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -220,7 +257,7 @@ export default function InvoicesPage() {
                 Clear All
               </Button>
             )}
-            <NotionImportDialog />
+            <NotionImportDialog onConnectSuccess={fetchInvoices} />
             <Link href="/invoices/new">
               <Button className="bg-accent hover:bg-accent/90 text-white font-black h-10 md:h-12 px-4 md:px-6 rounded-xl shadow-lg shadow-accent/20 text-xs md:text-sm">
                 <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" />

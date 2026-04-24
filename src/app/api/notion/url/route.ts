@@ -7,9 +7,9 @@ export async function GET(request: NextRequest) {
   const clientId = process.env.NOTION_CLIENT_ID;
   const redirectUri = process.env.NOTION_REDIRECT_URI;
 
-  if (!clientId || !redirectUri) {
-    console.error('Notion Auth error: missing environment variables');
-    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  if (!clientId || !redirectUri || !userId) {
+    console.error('Notion Auth error: missing environment variables or userId');
+    return NextResponse.json({ error: 'Server configuration or user error' }, { status: 500 });
   }
 
   console.log('Notion Auth Config Check:', { userId, clientId: !!clientId, redirectUri: !!redirectUri });
