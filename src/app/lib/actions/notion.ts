@@ -115,7 +115,7 @@ export async function fetchNotionInvoices(userId: string, databaseId: string): P
       const quantity = parseNumber(getValue(findProp(['No of products', 'No of p', 'Quantity', 'Qty']))) || 1;
 
       // 4. Cost per product (Unit Price)
-      const unitPrice = parseNumber(getValue(findProp(['Cost per product', 'Cost per p', 'Unit Price', 'Price'])));
+      const unitPrice = parseNumber(getValue(findProp(['Cost per product', 'Cost per p', 'Unit Price', 'Price', 'Cost'])));
 
       // 5. Subtotal
       const subtotal = parseNumber(getValue(findProp(['Subtotal']))) || (quantity * unitPrice);

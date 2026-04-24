@@ -188,13 +188,13 @@ export default function InvoicesPage() {
   const tableHeaders = [
     "Client Name",
     "Email",
-    "No of products",
-    "Cost per product",
+    "Quantity",
+    "Price",
     "Subtotal",
-    "Tax Rate (%)",
+    "Tax Rate",
     "Tax Amount",
     "Total Amount",
-    "Issued Date",
+    "Date",
     "Due Date",
     "Status",
     "Notes"
