@@ -63,6 +63,7 @@ export async function fetchNotionInvoices(userId: string, databaseId: string): P
 
     return response.results.map((page: any) => {
       const props = page.properties;
+      console.log('DEBUG NOTION PROPS:', Object.keys(props));
 
       /**
        * Helper to find a property by name with specific column priority.
@@ -105,41 +106,41 @@ export async function fetchNotionInvoices(userId: string, databaseId: string): P
       };
 
       // 1. Client Name (Title)
-      const clientName = getValue(findProp(['Client Name', 'Name', 'Title'])) || 'Unknown Client';
+      const clientName = getValue(findProp(['Client Name', 'Name', 'Title', 'Client'])) || 'Unknown Client';
 
       // 2. Email
-      const clientEmail = getValue(findProp(['Email', 'Mail'])) || 'no-email@example.com';
+      const clientEmail = getValue(findProp(['Email', 'Mail', 'E-mail'])) || 'no-email@example.com';
 
       // 3. No of products (Quantity)
-      const quantity = parseNumber(getValue(findProp(['No of products', 'Quantity', 'Qty']))) || 1;
+      const quantity = parseNumber(getValue(findProp(['No of products', 'No of p', 'Quantity', 'Qty']))) || 1;
 
       // 4. Cost per product (Unit Price)
-      const unitPrice = parseNumber(getValue(findProp(['Cost per product', 'Unit Price', 'Price'])));
+      const unitPrice = parseNumber(getValue(findProp(['Cost per product', 'Cost per p', 'Unit Price', 'Price'])));
 
       // 5. Subtotal
       const subtotal = parseNumber(getValue(findProp(['Subtotal']))) || (quantity * unitPrice);
 
       // 6. Tax Rate (%)
-      const taxRate = parseNumber(getValue(findProp(['Tax Rate', 'Tax %'])));
+      const taxRate = parseNumber(getValue(findProp(['Tax Rate', 'Tax%', 'Tax %'])));
 
       // 7. Tax Amount
       const taxAmount = parseNumber(getValue(findProp(['Tax Amount']))) || (subtotal * taxRate / 100);
 
       // 8. Total Amount
-      const totalAmount = parseNumber(getValue(findProp(['Total Amount', 'Total']))) || (subtotal + taxAmount);
+      const totalAmount = parseNumber(getValue(findProp(['Total Amount', 'Total', 'Total A']))) || (subtotal + taxAmount);
 
       // 9. Status
-      const statusRaw = getValue(findProp(['Status', 'Payment Status'])).toLowerCase();
+      const statusRaw = getValue(findProp(['Status', 'Payment Status', 'Payment status'])).toLowerCase();
       let status: 'pending' | 'paid' | 'overdue' = 'pending';
       if (statusRaw.includes('paid')) status = 'paid';
       else if (statusRaw.includes('overdue')) status = 'overdue';
 
       // 10. Dates
-      const issuedOn = getValue(findProp(['Issued Date', 'Created Date', 'Date']));
+      const issuedOn = getValue(findProp(['Issued Date', 'Issued', 'Created Date', 'Date']));
       const dueDate = getValue(findProp(['Due Date', 'Deadline']));
 
       // 11. Notes
-      const notes = getValue(findProp(['Notes', 'Description']));
+      const notes = getValue(findProp(['Notes', 'Description', 'Note']));
 
       return {
         clientName,
