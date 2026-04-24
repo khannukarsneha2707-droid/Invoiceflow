@@ -112,22 +112,22 @@ export async function fetchNotionInvoices(userId: string, databaseId: string): P
       const clientEmail = getValue(findProp(['Email', 'Mail', 'E-mail'])) || 'no-email@example.com';
 
       // 3. No of products (Quantity)
-      const quantity = parseNumber(getValue(findProp(['No of products', 'No of p', 'Quantity', 'Qty']))) || 1;
+      const quantity = parseNumber(getValue(findProp(['No of products', 'No of p', 'Quantity', 'Qty', '# Quantity']))) || 1;
 
       // 4. Cost per product (Unit Price)
-      const unitPrice = parseNumber(getValue(findProp(['Cost per product', 'Cost per p', 'Unit Price', 'Price', 'Cost'])));
+      const unitPrice = parseNumber(getValue(findProp(['Cost per product', 'Cost per p', 'Unit Price', 'Price', 'Cost', '# Price'])));
 
       // 5. Subtotal
-      const subtotal = parseNumber(getValue(findProp(['Subtotal']))) || (quantity * unitPrice);
+      const subtotal = parseNumber(getValue(findProp(['Subtotal', 'Σ Subtotal']))) || (quantity * unitPrice);
 
       // 6. Tax Rate (%)
-      const taxRate = parseNumber(getValue(findProp(['Tax Rate', 'Tax%', 'Tax %'])));
+      const taxRate = parseNumber(getValue(findProp(['Tax Rate', 'Tax%', 'Tax %', '# Tax Rate'])));
 
       // 7. Tax Amount
-      const taxAmount = parseNumber(getValue(findProp(['Tax Amount']))) || (subtotal * taxRate / 100);
+      const taxAmount = parseNumber(getValue(findProp(['Tax Amount', 'Σ Tax Amount']))) || (subtotal * taxRate / 100);
 
       // 8. Total Amount
-      const totalAmount = parseNumber(getValue(findProp(['Total Amount', 'Total', 'Total A']))) || (subtotal + taxAmount);
+      const totalAmount = parseNumber(getValue(findProp(['Total Amount', 'Total', 'Total A', 'Σ Total Amount']))) || (subtotal + taxAmount);
 
       // 9. Status
       const statusRaw = getValue(findProp(['Status', 'Payment Status', 'Payment status'])).toLowerCase();
