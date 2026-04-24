@@ -1,8 +1,58 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    /**
+     * INVOICEFLOW SECURITY RULES
+     * 
+     * 1. Users have full control over their own data at /users/{userId} and subcollections.
+     * 2. Invoices are publicly accessible by ID via collectionGroup queries for client payments.
+     * 3. Business profiles are public so clients see branding on public invoice pages.
+     */
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uId) {
+      return isSignedIn() && request.auth.uid == uId;
+    }
+
+    // --- COLLECTION GROUP ACCESS (Public View & Pay) ---
+    // Specifically for collection group queries using: where('id', '==', id)
+    match /{path=**}/invoices/{invoiceId} {
+      allow list: if true;
+      allow get: if true;
+      // Allow guests/clients to update limited fields (status, payment details)
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'paymentId', 'updatedAt']);
+    }
+
+    // --- USER PROFILE & NESTED DATA ACCESS ---
+    match /users/{userId} {
+      // Publicly readable for branding on invoices (companyName, avatarUrl)
+      allow get: if true;
+      
+      // Owner-only access for managing their profile
+      allow list, create, update, delete: if isOwner(userId);
+
+      // Explicit rules for primary collections to improve query authorization
+      match /clients/{clientId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      match /invoices/{invoiceId} {
+        allow read, write: if isOwner(userId);
+        
+        // Items nested under invoices
+        match /items/{itemId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
+
+      // Catch-all for any other nested data (PaymentTerms, etc.)
+      match /{allSubData=**} {
+        allow read, write: if isOwner(userId);
+      }
     }
   }
 }
