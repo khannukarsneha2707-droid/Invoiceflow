@@ -145,7 +145,14 @@ export async function fetchNotionInvoices(userId: string): Promise<NotionInvoice
       taxAmount: getNumber(p["Tax Amount"]),
       totalAmount: getNumber(p["Total Amount"]),
       status: (() => {
-        const s = getSelect(p["Status"])?.toLowerCase();
+        const prop = p["Status"];
+        let s = "";
+        if (prop?.type === "status") {
+          s = prop.status?.name?.toLowerCase() || "";
+        } else {
+          s = getSelect(p["Status"])?.toLowerCase() || "";
+        }
+        
         if (s === 'paid') return 'paid';
         if (s === 'overdue') return 'overdue';
         return 'pending';
