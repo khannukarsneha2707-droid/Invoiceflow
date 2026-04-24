@@ -207,6 +207,13 @@ export default function InvoicesPage() {
     }
   };
 
+  const formatSafeDate = (value: string | undefined | null) => {
+    if (!value) return "N/A";
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return "N/A";
+    return format(date, "MMM dd, yyyy");
+  };
+
   const filteredInvoices = allInvoices.filter(inv => {
     const matchesSearch = inv.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          inv.clientEmail.toLowerCase().includes(searchTerm.toLowerCase());
@@ -350,10 +357,10 @@ export default function InvoicesPage() {
                         ₹{(invoice.totalAmount || 0).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-[11px] font-medium text-muted-foreground">
-                        {invoice.createdAt ? format(new Date(invoice.createdAt), 'MMM dd, yyyy') : 'N/A'}
+                        {formatSafeDate(invoice.createdAt)}
                       </TableCell>
                       <TableCell className="text-[11px] font-medium text-muted-foreground">
-                        {invoice.dueDate ? format(new Date(invoice.dueDate), 'MMM dd, yyyy') : 'N/A'}
+                        {formatSafeDate(invoice.dueDate)}
                       </TableCell>
                       <TableCell className="text-center">
                         {getStatusBadge(invoice.status)}
