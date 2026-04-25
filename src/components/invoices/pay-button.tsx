@@ -60,11 +60,24 @@ export function PayButton({ invoice, variant = "default", className, size = "sm"
         throw new Error("Razorpay not connected");
       }
 
-      const order = await createRazorpayOrder({
-        amount: invoice.totalAmount,
-        invoiceId: invoice.id,
-        userId: invoice.userId,
+      console.log("Calling create-order...");
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: invoice.totalAmount,
+        }),
       });
+
+      const order = await res.json();
+      console.log("ORDER RESPONSE:", order);
+
+      if (!order || !order.id) {
+        alert("Order creation failed");
+        return;
+      }
 
       const options = {
         key: keyId,

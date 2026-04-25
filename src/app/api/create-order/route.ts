@@ -4,6 +4,7 @@ import Razorpay from "razorpay";
 export async function POST(req: Request) {
   try {
     const { amount } = await req.json();
+    console.log("Creating order for amount:", amount);
 
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID!,
@@ -16,7 +17,12 @@ export async function POST(req: Request) {
       receipt: "receipt_" + Date.now().toString(),
     });
 
-    return NextResponse.json(order);
+    console.log("ORDER CREATED:", order);
+
+    return NextResponse.json({
+      id: order.id,
+      amount: order.amount
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Order creation failed" }, { status: 500 });
