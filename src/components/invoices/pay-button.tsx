@@ -38,11 +38,24 @@ export function PayButton({ invoice, variant = "default", className, size = "sm"
   const handlePay = async () => {
     if (invoice.status === 'paid' || !firestore) return;
     
+    // Check if Razorpay script is loaded
+    if (!(window as any).Razorpay) {
+      alert("Payment system loading. Try again.");
+      return;
+    }
+
+    // Check for Razorpay Key ID
+    const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    if (!key) {
+      alert("Razorpay key missing");
+      return;
+    }
+    
     setLoading(true);
     try {
       const integrationRef = doc(firestore, 'users', invoice.userId, 'integrations', 'razorpay');
       const integrationSnap = await getDoc(integrationRef);
-      const keyId = integrationSnap.exists() ? integrationSnap.data()?.keyId : process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      const keyId = integrationSnap.exists() ? integrationSnap.data()?.keyId : key;
       if (!keyId) {
         throw new Error("Razorpay not connected");
       }
