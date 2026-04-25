@@ -71,8 +71,20 @@ export function PayButton({ invoice, variant = "default", className, size = "sm"
         order_id: order.id,
         name: "InvoiceFlow",
         description: "Invoice Payment",
-        handler: function (response: any) {
+        handler: async function (response: any) {
+          console.log("Payment success:", response);
+
+          await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              invoiceId: invoice.invoiceId,
+              paymentId: response.razorpay_payment_id
+            })
+          });
+
           alert("Payment successful");
+
           window.location.reload();
         }
       };
