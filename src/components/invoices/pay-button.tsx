@@ -6,7 +6,7 @@ import { CreditCard, Loader2 } from 'lucide-react';
 import { createRazorpayOrder, verifyRazorpayPayment } from '@/app/lib/actions/razorpay';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, updateDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface PayButtonProps {
   invoice: any;
@@ -40,13 +40,21 @@ export function PayButton({ invoice, variant = "default", className, size = "sm"
     
     setLoading(true);
     try {
+      const integrationRef = doc(firestore, 'users', invoice.userId, 'integrations', 'razorpay');
+      const integrationSnap = await getDoc(integrationRef);
+      const keyId = integrationSnap.exists() ? integrationSnap.data()?.keyId : process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!keyId) {
+        throw new Error("Razorpay not connected");
+      }
+
       const order = await createRazorpayOrder({
         amount: invoice.totalAmount,
         invoiceId: invoice.id,
+        userId: invoice.userId,
       });
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: keyId,
         amount: order.amount,
         currency: order.currency,
         name: 'InvoiceFlow',
@@ -58,6 +66,7 @@ export function PayButton({ invoice, variant = "default", className, size = "sm"
             orderId: response.razorpay_order_id,
             paymentId: response.razorpay_payment_id,
             signature: response.razorpay_signature,
+            userId: invoice.userId,
           });
 
           if (verification.success) {

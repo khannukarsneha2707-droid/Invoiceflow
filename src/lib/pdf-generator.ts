@@ -8,14 +8,12 @@ import { format } from 'date-fns';
 const imageUrlToBase64 = async (url: string): Promise<string | null> => {
   if (!url) return null;
   try {
-    const response = await fetch(url, { mode: 'cors' });
+    const response = await fetch(url);
     if (!response.ok) return null;
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(blob);
-    });
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const contentType = response.headers.get('content-type') || 'image/png';
+    return `data:${contentType};base64,${buffer.toString('base64')}`;
   } catch (e) {
     return null;
   }
@@ -167,7 +165,7 @@ export const generateInvoicePDF = async (invoice: any, profile?: any) => {
   doc.save(fileName);
 };
 
-export const getInvoicePDFBase64 = async (invoice: any, profile?: any) => {
+export const getInvoicePDFBuffer = async (invoice: any, profile?: any) => {
   const doc = await createInvoiceDoc(invoice, profile);
-  return doc.output('datauristring');
+  return Buffer.from(doc.output('arraybuffer'));
 };

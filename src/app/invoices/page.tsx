@@ -49,7 +49,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { useCollection, useDoc, useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, doc, getDocs, writeBatch } from 'firebase/firestore';
-import { generateInvoicePDF, getInvoicePDFBase64 } from '@/lib/pdf-generator';
+import { generateInvoicePDF } from '@/lib/pdf-generator';
 import { sendInvoiceEmail } from '@/app/lib/actions/send-email';
 import { useToast } from '@/hooks/use-toast';
 import { NotionImportDialog } from '@/components/invoices/notion-import-dialog';
@@ -177,21 +177,24 @@ export default function InvoicesPage() {
     toast({ title: "Link Copied", description: "Payment link copied to clipboard." });
   };
 
-  const handleSendReminder = async (invoice: any) => {
+  const sendReminderWithPDF = async (invoice: any) => {
     if (!firestore || !user) return;
     setIsSending(invoice.id);
     try {
-      const pdfBase64 = await getInvoicePDFBase64(invoice, profile);
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const publicLink = `${origin}/invoice/${invoice.id}`;
-      await sendInvoiceEmail({
-        to: invoice.clientEmail,
-        clientName: invoice.clientName,
-        invoiceNumber: invoice.id?.slice(-6).toUpperCase() || 'INV-001',
-        pdfBase64,
-        paymentUrl: publicLink,
-        isReminder: true
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientEmail: invoice.clientEmail,
+          clientName: invoice.clientName,
+          amount: invoice.totalAmount,
+          dueDate: invoice.dueDate,
+          invoice: invoice,
+          profile: profile
+        })
       });
+
+      if (!response.ok) throw new Error('Failed to send email');
 
       // Update metadata
       const invRef = doc(firestore, 'users', user.uid, 'invoices', invoice.id);
@@ -199,7 +202,7 @@ export default function InvoicesPage() {
         lastReminderSentAt: new Date().toISOString()
       });
 
-      toast({ title: "Reminder Sent!", description: `Payment reminder has been sent to ${invoice.clientEmail}` });
+      toast({ title: "Reminder Sent!", description: `Payment reminder with PDF has been sent to ${invoice.clientEmail}` });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Email Failed", description: error.message || "Could not send the reminder." });
     } finally {
@@ -377,7 +380,7 @@ export default function InvoicesPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-2xl p-2 border-none">
                             {invoice.status !== 'paid' && (
-                              <DropdownMenuItem className="cursor-pointer font-bold text-rose-600 focus:bg-rose-50" onSelect={() => handleSendReminder(invoice)} disabled={isSending === invoice.id}>
+                              <DropdownMenuItem className="cursor-pointer font-bold text-rose-600 focus:bg-rose-50" onSelect={() => sendReminderWithPDF(invoice)} disabled={isSending === invoice.id}>
                                 {isSending === invoice.id ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <BellRing className="mr-2 h-3 w-3" />} Send Reminder
                               </DropdownMenuItem>
                             )}

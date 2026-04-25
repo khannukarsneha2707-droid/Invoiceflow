@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
+import { InstallPrompt } from '@/components/InstallPrompt';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { 
   FileText, 
@@ -32,7 +33,7 @@ import {
 } from 'recharts';
 import { useCollection, useDoc, useUser, useFirestore, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, doc } from 'firebase/firestore';
-import { generateInvoicePDF, getInvoicePDFBase64 } from '@/lib/pdf-generator';
+import { generateInvoicePDF } from '@/lib/pdf-generator';
 import { sendInvoiceEmail } from '@/app/lib/actions/send-email';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -151,37 +152,39 @@ export default function DashboardPage() {
       .slice(0, 5);
   }, [invoices]);
 
-  const handleSendReminder = async (invoice: any) => {
+  const sendReminderWithPDF = async (invoice: any) => {
     if (!firestore || !user) return;
     setIsSending(invoice.id);
     try {
-      const pdfBase64 = await getInvoicePDFBase64(invoice, profile);
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const publicLink = `${origin}/invoice/${invoice.id}`;
-      
-      await sendInvoiceEmail({
-        to: invoice.clientEmail,
-        clientName: invoice.clientName,
-        invoiceNumber: invoice.id?.slice(-6).toUpperCase() || 'INV-001',
-        pdfBase64,
-        paymentUrl: publicLink,
-        isReminder: true
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientEmail: invoice.clientEmail,
+          clientName: invoice.clientName,
+          amount: invoice.totalAmount,
+          dueDate: invoice.dueDate,
+          invoice: invoice,
+          profile: profile
+        })
       });
+
+      if (!response.ok) throw new Error('Failed to send email');
 
       const invRef = doc(firestore, 'users', user.uid, 'invoices', invoice.id);
       updateDocumentNonBlocking(invRef, {
         lastReminderSentAt: new Date().toISOString()
       });
 
-      toast({
-        title: "Reminder Sent!",
-        description: `Overdue reminder has been sent to ${invoice.clientEmail}`,
+      toast({ 
+        title: "Reminder Sent!", 
+        description: `Payment reminder with PDF has been sent to ${invoice.clientEmail}` 
       });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Failed to Send",
-        description: error.message || "Could not send reminder email.",
+      toast({ 
+        variant: "destructive", 
+        title: "Email Failed", 
+        description: error.message || "Could not send the reminder." 
       });
     } finally {
       setIsSending(null);
@@ -202,6 +205,9 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-primary">Financial Overview</h1>
             <p className="text-muted-foreground text-sm md:text-lg mt-1">Track growth and collection health.</p>
+            <div className="mt-4">
+              <InstallPrompt />
+            </div>
           </div>
           <Link href="/invoices/new" className="w-full md:w-auto">
             <Button className="w-full bg-accent hover:bg-accent/90 text-white font-black h-11 md:h-12 px-6 rounded-xl shadow-lg shadow-accent/20">
@@ -311,7 +317,7 @@ export default function DashboardPage() {
                       size="sm" 
                       variant="ghost" 
                       className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl hover:bg-rose-100 text-rose-600 shrink-0"
-                      onClick={() => handleSendReminder(inv)}
+                      onClick={() => sendReminderWithPDF(inv)}
                       disabled={isSending === inv.id}
                     >
                       {isSending === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3 md:h-4 md:w-4" />}

@@ -21,6 +21,7 @@ export default function SettingsPage() {
   
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingRazorpay, setIsSavingRazorpay] = useState(false);
 
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -28,6 +29,45 @@ export default function SettingsPage() {
   }, [firestore, user]);
 
   const { data: profile, isLoading } = useDoc(profileRef);
+
+  const handleSaveRazorpay = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    setIsSavingRazorpay(true);
+    const formData = new FormData(e.currentTarget);
+    const razorpayKeyId = formData.get('razorpayKeyId') as string;
+    const razorpaySecret = formData.get('razorpaySecret') as string;
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/save-razorpay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          razorpayKeyId,
+          razorpaySecret,
+          userId: user.uid,
+          idToken
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to save Razorpay settings');
+
+      toast({
+        title: "Razorpay Saved",
+        description: "Your Razorpay keys have been updated.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Save Failed",
+        description: error.message || "Could not save Razorpay settings.",
+      });
+    } finally {
+      setIsSavingRazorpay(false);
+    }
+  };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -251,6 +291,45 @@ export default function SettingsPage() {
                 <Button type="submit" disabled={isSaving} className="ml-auto font-black px-8 h-12 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
                   {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Business Profile
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+          
+          <Card className="md:col-span-3 border-border shadow-sm rounded-2xl overflow-hidden">
+            <form onSubmit={handleSaveRazorpay}>
+              <CardHeader className="bg-muted/30 pb-6 border-b">
+                <CardTitle className="text-xl font-bold">Razorpay Credentials</CardTitle>
+                <CardDescription>Configure your payment processor.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="razorpayKeyId" className="text-xs font-bold uppercase text-primary/60 tracking-widest">Key ID</Label>
+                    <Input 
+                      id="razorpayKeyId" 
+                      name="razorpayKeyId"
+                      defaultValue={profile?.razorpayKeyId} 
+                      placeholder="rzp_live_..."
+                      className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-accent"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="razorpaySecret" className="text-xs font-bold uppercase text-primary/60 tracking-widest">Secret Key</Label>
+                    <Input 
+                      id="razorpaySecret" 
+                      name="razorpaySecret"
+                      type="password"
+                      placeholder="••••••••••••••••"
+                      className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-accent"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t pt-6 pb-8 bg-muted/20">
+                <Button type="submit" disabled={isSavingRazorpay} className="ml-auto font-black px-8 h-12 rounded-xl bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20">
+                  {isSavingRazorpay ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Save Razorpay Settings
                 </Button>
               </CardFooter>
             </form>

@@ -3,21 +3,26 @@
 
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-});
+import { db } from '@/lib/firebaseAdmin';
 
 interface CreateOrderParams {
   amount: number;
   invoiceId: string;
+  userId: string;
 }
 
-export async function createRazorpayOrder({ amount, invoiceId }: CreateOrderParams) {
-  if (!process.env.RAZORPAY_KEY_SECRET) {
-    throw new Error('Razorpay Key Secret is not configured.');
+export async function createRazorpayOrder({ amount, invoiceId, userId }: CreateOrderParams) {
+  const integrationDoc = await db.collection('users').doc(userId).collection('integrations').doc('razorpay').get();
+  
+  if (!integrationDoc.exists) {
+    throw new Error('Razorpay not connected');
   }
+
+  const { keyId, keySecret } = integrationDoc.data()!;
+  const razorpay = new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  });
 
   try {
     const order = await razorpay.orders.create({
@@ -44,18 +49,27 @@ interface VerifyPaymentParams {
   orderId: string;
   paymentId: string;
   signature: string;
+  userId: string;
 }
 
 export async function verifyRazorpayPayment({
   orderId,
   paymentId,
   signature,
+  userId,
 }: VerifyPaymentParams) {
-  const secret = process.env.RAZORPAY_KEY_SECRET || '';
+  const integrationDoc = await db.collection('users').doc(userId).collection('integrations').doc('razorpay').get();
+  
+  if (!integrationDoc.exists) {
+    throw new Error('Razorpay not connected');
+  }
+
+  const { keySecret } = integrationDoc.data()!;
+
   const body = orderId + '|' + paymentId;
 
   const expectedSignature = crypto
-    .createHmac('sha256', secret)
+    .createHmac('sha256', keySecret)
     .update(body.toString())
     .digest('hex');
 
