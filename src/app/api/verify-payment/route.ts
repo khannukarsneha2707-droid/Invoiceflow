@@ -24,6 +24,20 @@ export async function POST(req: Request) {
       paidAt: new Date().toISOString()
     });
 
+    const usersSnapshot = await db.collection("users").get();
+    for (const userDoc of usersSnapshot.docs) {
+      const invoiceRef = userDoc.ref.collection("invoices").doc(invoiceId);
+      const invoiceSnap = await invoiceRef.get();
+
+      if (invoiceSnap.exists) {
+        await invoiceRef.update({
+          status: "paid",
+          paymentId: paymentId,
+          paidAt: new Date().toISOString()
+        });
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(error);
