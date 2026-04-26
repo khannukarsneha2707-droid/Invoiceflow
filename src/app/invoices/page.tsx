@@ -211,6 +211,11 @@ export default function InvoicesPage() {
   };
 
   const filteredInvoices = allInvoices.filter(inv => {
+    const isZeroQuantity = (inv.items?.[0]?.quantity || 0) === 0;
+    const isZeroAmount = (inv.totalAmount || 0) === 0;
+    
+    if (isZeroQuantity || isZeroAmount) return false;
+
     const matchesSearch = inv.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          inv.clientEmail.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClient = clientFilter === 'all' || inv.clientId === clientFilter;

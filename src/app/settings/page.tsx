@@ -33,8 +33,53 @@ export default function SettingsPage() {
     return doc(firestore, 'users', user.uid, 'settings', 'payment');
   }, [firestore, user]);
 
+  const emailTemplateRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid, 'settings', 'emailTemplate');
+  }, [firestore, user]);
+
   const { data: profile, isLoading } = useDoc(profileRef);
   const { data: paymentSettings } = useDoc(paymentSettingsRef);
+  const { data: emailTemplate } = useDoc(emailTemplateRef);
+
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+
+  const handleSaveEmailTemplate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    setIsSavingEmail(true);
+    const formData = new FormData(e.currentTarget);
+    const subject = formData.get('subject') as string;
+    const body = formData.get('body') as string;
+
+    try {
+      const response = await fetch('/api/save-email-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          subject,
+          body
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to save email template');
+
+      toast({
+        title: "Template Saved",
+        description: "Your invoice email template has been updated.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Save Failed",
+        description: error.message || "Could not save email template.",
+      });
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
 
   const handleSaveRazorpay = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -46,15 +91,13 @@ export default function SettingsPage() {
     const razorpaySecret = formData.get('razorpaySecret') as string;
 
     try {
-      const idToken = await user.getIdToken();
       const response = await fetch('/api/save-razorpay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           razorpayKeyId,
           razorpaySecret,
-          userId: user.uid,
-          idToken
+          userId: user.uid
         })
       });
 
@@ -336,6 +379,53 @@ export default function SettingsPage() {
                 <Button type="submit" disabled={isSavingRazorpay} className="ml-auto font-black px-8 h-12 rounded-xl bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20">
                   {isSavingRazorpay ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Razorpay Settings
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+          
+          <Card className="md:col-span-3 border-border shadow-sm rounded-2xl overflow-hidden">
+            <form onSubmit={handleSaveEmailTemplate}>
+              <CardHeader className="bg-muted/30 pb-6 border-b">
+                <CardTitle className="text-xl font-bold">Email Template</CardTitle>
+                <CardDescription>Customize the email sent to customers.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-8">
+                <div className="space-y-2">
+                    <Label htmlFor="subject" className="text-xs font-bold uppercase text-primary/60 tracking-widest">Subject</Label>
+                    <Input 
+                      id="subject" 
+                      name="subject"
+                      defaultValue={emailTemplate?.subject || "Invoice [[INVOICE_ID]] from [[SENDER_NAME]]"} 
+                      placeholder="Invoice #[[INVOICE_ID]]"
+                      className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-accent"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="body" className="text-xs font-bold uppercase text-primary/60 tracking-widest">Body</Label>
+                    <textarea 
+                      id="body" 
+                      name="body"
+                      rows={6}
+                      defaultValue={emailTemplate?.body || "Hi [[CUSTOMER_NAME]],\n\nYour payment of ₹[[AMOUNT]] is due.\n\nPay here:\n[[PAYMENT_LINK]]\n\nThank you,\n[[SENDER_NAME]]"}
+                      className="w-full p-4 rounded-xl bg-muted/30 border-none focus-visible:ring-accent"
+                    />
+                </div>
+                <div className="p-4 bg-muted/20 rounded-xl space-y-2">
+                  <p className="text-xs font-bold text-primary uppercase">Available Variables:</p>
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground p-2 bg-white rounded-lg">
+                    <span>[[CUSTOMER_NAME]]</span>
+                    <span>[[INVOICE_ID]]</span>
+                    <span>[[AMOUNT]]</span>
+                    <span>[[PAYMENT_LINK]]</span>
+                    <span>[[SENDER_NAME]]</span>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t pt-6 pb-8 bg-muted/20">
+                <Button type="submit" disabled={isSavingEmail} className="ml-auto font-black px-8 h-12 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
+                  {isSavingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Save Email Template
                 </Button>
               </CardFooter>
             </form>

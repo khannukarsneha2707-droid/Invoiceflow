@@ -40,17 +40,33 @@ export async function POST(req: Request) {
     
     console.log("Invoice URL:", invoiceUrl);
     
+    // Fetch template
+    const templateDoc = await db.collection("users").doc(invoice.userId).collection("settings").doc("emailTemplate").get();
+    const template = templateDoc.data();
+
+    // Default template variables
+    let subject = template?.subject || "Invoice [[INVOICE_ID]] from [[SENDER_NAME]]";
+    let body = template?.body || "Hi [[CUSTOMER_NAME]],\n\nYour payment of ₹[[AMOUNT]] is due.\n\nPay here:\n[[PAYMENT_LINK]]\n\nThank you,\n[[SENDER_NAME]]";
+
+    // Replace variables
+    subject = subject
+      .replaceAll('[[INVOICE_ID]]', invoice.id || '')
+      .replaceAll('[[SENDER_NAME]]', profile?.companyName || '');
+
+    body = body
+      .replaceAll('[[CUSTOMER_NAME]]', clientName || '')
+      .replaceAll('[[INVOICE_ID]]', invoice.id || '')
+      .replaceAll('[[AMOUNT]]', amount || '')
+      .replaceAll('[[PAYMENT_LINK]]', invoiceUrl)
+      .replaceAll('[[SENDER_NAME]]', profile?.companyName || '');
+
+    const htmlBody = body.replace(/\n/g, '<br/>');
+    
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: clientEmail,
-      subject: `Payment Reminder - ₹${amount}`,
-      html: `
-        <h2>Hello ${clientName},</h2>
-        <p>Your payment of <b>₹${amount}</b> is due on <b>${dueDate}</b>.</p>
-        <p>Please complete your payment.</p>
-        <p>Pay Now: ${invoiceUrl}</p>
-        <p>Click here to pay: <a href="${invoiceUrl}">Pay Now</a></p>
-      `,
+      subject: subject,
+      html: htmlBody,
       attachments: [
         {
           filename: `Invoice_${invoice.id || 'export'}.pdf`,
