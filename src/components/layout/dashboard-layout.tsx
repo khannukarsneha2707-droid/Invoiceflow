@@ -61,6 +61,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               }
               setDeferredPrompt(null);
           });
+      } else {
+        alert("The app is already installed or your browser does not support automatic installation. You can usually install it via your browser's menu (e.g., 'Add to Home Screen' or 'Install App').");
       }
   };
 
@@ -135,8 +137,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              {deferredPrompt && (
-                <SidebarMenuItem className="my-0.5 md:my-1">
+              <SidebarMenuItem className="my-0.5 md:my-1">
                   <SidebarMenuButton 
                     onClick={handleInstall}
                     className="transition-all duration-200 py-5 md:py-6 rounded-xl hover:bg-white/5"
@@ -146,7 +147,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <span className="font-semibold text-xs md:text-sm">Install App</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-3 md:p-4 mt-auto">
