@@ -7,6 +7,12 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 export const metadata: Metadata = {
   title: 'InvoiceFlow | Professional Invoice Management',
   description: 'Streamline your billing with InvoiceFlow. Professional, fast, and secure.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'InvoiceFlow',
+  },
 };
 
 export default function RootLayout({
