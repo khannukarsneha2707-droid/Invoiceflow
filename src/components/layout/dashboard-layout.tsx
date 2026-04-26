@@ -120,7 +120,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
           </SidebarHeader>
-          <SidebarContent className="px-3">
+          <SidebarContent className="px-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.name} className="my-0.5 md:my-1">

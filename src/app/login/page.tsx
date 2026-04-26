@@ -101,10 +101,10 @@ export default function LoginPage() {
               Continue with Google
             </Button>
 
-            <div className="relative flex items-center py-2">
-              <Separator className="flex-grow" />
-              <span className="mx-2 text-xs text-muted-foreground uppercase font-bold">or</span>
-              <Separator className="flex-grow" />
+            <div className="relative flex items-center justify-center py-2">
+              <div className="flex-grow border-t border-border" />
+              <span className="mx-4 text-xs text-muted-foreground uppercase font-bold">or</span>
+              <div className="flex-grow border-t border-border" />
             </div>
 
             <form onSubmit={handleLogin} className="grid gap-4">
@@ -120,7 +120,12 @@ export default function LoginPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link href="/forgot-password" className="text-xs text-primary hover:underline font-semibold">
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input 
                   id="password" 
                   type="password" 

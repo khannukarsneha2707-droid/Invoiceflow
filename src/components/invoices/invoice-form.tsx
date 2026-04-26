@@ -28,6 +28,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { ClientFormDialog } from '@/components/clients/client-form-dialog';
 import { Invoice } from '@/lib/invoice-store';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -57,6 +58,7 @@ interface InvoiceFormProps {
 }
 
 export function InvoiceForm({ initialData, onSubmit, isSubmitting }: InvoiceFormProps) {
+  const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -121,47 +123,50 @@ export function InvoiceForm({ initialData, onSubmit, isSubmitting }: InvoiceForm
                     <CardTitle className="text-2xl font-bold">Client Selection</CardTitle>
                     <CardDescription>Select a client from your database or create a new one.</CardDescription>
                   </div>
-                  <Link href="/clients">
-                    <Button type="button" variant="ghost" className="text-accent font-bold">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Manage Clients
-                    </Button>
-                  </Link>
                 </div>
               </CardHeader>
+              <ClientFormDialog open={isClientDialogOpen} onOpenChange={setIsClientDialogOpen} />
               <CardContent className="grid md:grid-cols-2 gap-8 pt-8">
                 <FormField
                   control={form.control}
                   name="clientId"
                   render={({ field }) => (
                     <FormItem className="col-span-full">
-                      <FormLabel className="font-bold text-primary/70 uppercase text-xs tracking-widest">Choose Client</FormLabel>
-                      <Select 
-                        onValueChange={handleClientChange} 
-                        defaultValue={field.value}
-                        disabled={loadingClients}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-14 bg-muted/30 border-none rounded-xl text-lg font-bold">
-                            <SelectValue placeholder={loadingClients ? "Loading clients..." : "Select a client..."} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="rounded-xl border-none shadow-2xl">
-                          {clients?.map((client) => (
-                            <SelectItem key={client.id} value={client.id!} className="cursor-pointer py-3">
-                              <div className="flex flex-col">
-                                <span className="font-bold">{client.name}</span>
-                                <span className="text-xs text-muted-foreground">{client.email}</span>
+                      <div className="flex justify-between items-end mb-2">
+                        <FormLabel className="font-bold text-primary/70 uppercase text-xs tracking-widest">Choose Client</FormLabel>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Create new client</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Select 
+                          onValueChange={handleClientChange} 
+                          defaultValue={field.value}
+                          disabled={loadingClients}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-14 bg-muted/30 border-none rounded-xl text-lg font-bold">
+                              <SelectValue placeholder={loadingClients ? "Loading clients..." : "Select a client..."} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="rounded-xl border-none shadow-2xl">
+                            {clients?.map((client) => (
+                              <SelectItem key={client.id} value={client.id!} className="cursor-pointer py-3">
+                                <div className="flex flex-col">
+                                  <span className="font-bold">{client.name}</span>
+                                  <span className="text-xs text-muted-foreground">{client.email}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                            {!loadingClients && clients?.length === 0 && (
+                              <div className="p-4 text-center text-sm text-muted-foreground">
+                                No clients found. Please add a client first.
                               </div>
-                            </SelectItem>
-                          ))}
-                          {!loadingClients && clients?.length === 0 && (
-                            <div className="p-4 text-center text-sm text-muted-foreground">
-                              No clients found. Please add a client first.
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <Button type="button" variant="outline" className="h-14 w-14 rounded-xl shrink-0" onClick={() => setIsClientDialogOpen(true)}>
+                          <UserPlus className="h-5 w-5" />
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -388,12 +393,7 @@ export function InvoiceForm({ initialData, onSubmit, isSubmitting }: InvoiceForm
                   )}
                 />
 
-                <div className="p-4 bg-accent/5 rounded-2xl flex gap-3">
-                  <Info className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <p className="text-xs text-accent-foreground leading-relaxed font-medium">
-                    This invoice will be sent to the client's email upon creation.
-                  </p>
-                </div>
+
               </CardContent>
               <CardFooter className="pt-4 pb-8">
                 <Button 
