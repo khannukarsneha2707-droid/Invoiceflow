@@ -4,6 +4,7 @@
 import { useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { NotionImportDialog } from '@/components/invoices/notion-import-dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { 
   FileText, 
@@ -209,12 +210,15 @@ export default function DashboardPage() {
               <InstallPrompt />
             </div>
           </div>
-          <Link href="/invoices/new" className="w-full md:w-auto">
-            <Button className="w-full bg-accent hover:bg-accent/90 text-white font-black h-11 md:h-12 px-6 rounded-xl shadow-lg shadow-accent/20">
-              <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-              New Invoice
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <NotionImportDialog />
+            <Link href="/invoices/new" className="w-full md:w-auto">
+              <Button className="w-full bg-accent hover:bg-accent/90 text-white font-black h-11 md:h-12 px-6 rounded-xl shadow-lg shadow-accent/20">
+                <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                New Invoice
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">

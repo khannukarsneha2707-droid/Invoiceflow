@@ -216,9 +216,16 @@ export default function InvoicesPage() {
     
     if (isZeroQuantity || isZeroAmount) return false;
 
-    const matchesSearch = inv.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         inv.clientEmail.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClient = clientFilter === 'all' || inv.clientId === clientFilter;
+    const selectedClient = clients?.find(client => client.id === clientFilter);
+    const selectedClientName = selectedClient ? selectedClient.name : null;
+
+    const matchesSearch = (inv.clientName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+                         (inv.clientEmail?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    
+    const matchesClient = clientFilter === 'all' || 
+                          inv.clientId === clientFilter || 
+                          (selectedClientName && inv.clientName === selectedClientName);
+    
     return matchesSearch && matchesClient;
   });
 

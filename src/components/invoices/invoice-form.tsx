@@ -28,7 +28,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { AIDescriptionTool } from './ai-description-tool';
 import { Invoice } from '@/lib/invoice-store';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -215,10 +214,6 @@ export function InvoiceForm({ initialData, onSubmit, isSubmitting }: InvoiceForm
                             <FormControl>
                               <Input placeholder="Web Design & Development..." {...field} className="h-12 bg-white border-none rounded-xl shadow-sm" />
                             </FormControl>
-                            <AIDescriptionTool 
-                              itemName={field.value} 
-                              onSelect={(desc) => form.setValue(`items.${index}.description`, desc)} 
-                            />
                             <FormMessage />
                           </div>
                         )}
