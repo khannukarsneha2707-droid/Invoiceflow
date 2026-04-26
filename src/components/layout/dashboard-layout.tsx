@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
   SidebarProvider, 
@@ -23,7 +23,8 @@ import {
   Loader2,
   Bell,
   Search,
-  Users
+  Users,
+  Download
 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -39,6 +40,29 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const pathname = usePathname();
+
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = () => {
+      if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult: any) => {
+              if (choiceResult.outcome === 'accepted') {
+                  console.log('User accepted the install prompt');
+              }
+              setDeferredPrompt(null);
+          });
+      }
+  };
 
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -111,6 +135,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {deferredPrompt && (
+                <SidebarMenuItem className="my-0.5 md:my-1">
+                  <SidebarMenuButton 
+                    onClick={handleInstall}
+                    className="transition-all duration-200 py-5 md:py-6 rounded-xl hover:bg-white/5"
+                    tooltip="Install App"
+                  >
+                    <Download className="h-4 w-4 md:h-5 md:w-5 mr-3 text-white/60" />
+                    <span className="font-semibold text-xs md:text-sm">Install App</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-3 md:p-4 mt-auto">

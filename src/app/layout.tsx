@@ -3,6 +3,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 
 export const metadata: Metadata = {
   title: 'InvoiceFlow | Professional Invoice Management',
@@ -30,6 +31,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
+          <ServiceWorkerRegistration />
           {children}
           <footer className="py-6 text-center text-sm text-muted-foreground">
             Created by Infinix Academy
