@@ -11,9 +11,9 @@ export async function POST(req: Request) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
-      await db.collection('users').doc(userId).collection('integrations').doc('razorpay').set({
-        keyId: razorpayKeyId,
-        keySecret: razorpaySecret,
+      await db.collection('users').doc(userId).collection('settings').doc('payment').set({
+        razorpayKeyId: razorpayKeyId,
+        razorpaySecret: razorpaySecret,
       }, { merge: true });
 
       return Response.json({ success: true, message: 'Razorpay settings saved successfully' });

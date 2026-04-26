@@ -11,6 +11,7 @@ export async function POST(req: Request) {
     // Save to publicInvoices
     await db.collection('publicInvoices').doc(invoice.id).set({
       invoiceId: invoice.id,
+      userId: invoice.userId,
       clientName,
       clientEmail,
       totalAmount: amount,

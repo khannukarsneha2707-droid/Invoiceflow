@@ -28,7 +28,13 @@ export default function SettingsPage() {
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
+  const paymentSettingsRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid, 'settings', 'payment');
+  }, [firestore, user]);
+
   const { data: profile, isLoading } = useDoc(profileRef);
+  const { data: paymentSettings } = useDoc(paymentSettingsRef);
 
   const handleSaveRazorpay = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -309,7 +315,7 @@ export default function SettingsPage() {
                     <Input 
                       id="razorpayKeyId" 
                       name="razorpayKeyId"
-                      defaultValue={profile?.razorpayKeyId} 
+                      defaultValue={paymentSettings?.razorpayKeyId} 
                       placeholder="rzp_live_..."
                       className="h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-accent"
                     />

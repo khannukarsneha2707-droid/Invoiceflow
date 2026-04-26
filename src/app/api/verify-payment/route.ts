@@ -18,24 +18,30 @@ export async function POST(req: Request) {
 
     const db = getFirestore();
 
-    await db.collection("publicInvoices").doc(invoiceId).update({
+    const publicInvoiceRef = db.collection("publicInvoices").doc(invoiceId);
+    const publicInvoiceSnap = await publicInvoiceRef.get();
+
+    if (!publicInvoiceSnap.exists) {
+        return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    const { userId } = publicInvoiceSnap.data()!;
+
+    await publicInvoiceRef.update({
       status: "paid",
       paymentId: paymentId,
       paidAt: new Date().toISOString()
     });
 
-    const usersSnapshot = await db.collection("users").get();
-    for (const userDoc of usersSnapshot.docs) {
-      const invoiceRef = userDoc.ref.collection("invoices").doc(invoiceId);
-      const invoiceSnap = await invoiceRef.get();
+    const userInvoiceRef = db.collection("users").doc(userId).collection("invoices").doc(invoiceId);
+    const userInvoiceSnap = await userInvoiceRef.get();
 
-      if (invoiceSnap.exists) {
-        await invoiceRef.update({
-          status: "paid",
-          paymentId: paymentId,
-          paidAt: new Date().toISOString()
+    if (userInvoiceSnap.exists) {
+        await userInvoiceRef.update({
+            status: "paid",
+            paymentId: paymentId,
+            paidAt: new Date().toISOString()
         });
-      }
     }
 
     return NextResponse.json({ success: true });

@@ -42,7 +42,10 @@ export function PayButton({ invoice, variant = "default", className, size = "sm"
       const res = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: invoice.totalAmount })
+        body: JSON.stringify({ 
+            amount: invoice.totalAmount,
+            invoiceId: invoice.invoiceId 
+        })
       });
 
       if (!res.ok) {
@@ -65,7 +68,7 @@ export function PayButton({ invoice, variant = "default", className, size = "sm"
       }
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: order.key,
         amount: order.amount,
         currency: "INR",
         order_id: order.id,

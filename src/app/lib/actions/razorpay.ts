@@ -12,16 +12,16 @@ interface CreateOrderParams {
 }
 
 export async function createRazorpayOrder({ amount, invoiceId, userId }: CreateOrderParams) {
-  const integrationDoc = await db.collection('users').doc(userId).collection('integrations').doc('razorpay').get();
+  const integrationDoc = await db.collection('users').doc(userId).collection('settings').doc('payment').get();
   
   if (!integrationDoc.exists) {
     throw new Error('Razorpay not connected');
   }
 
-  const { keyId, keySecret } = integrationDoc.data()!;
+  const { razorpayKeyId, razorpaySecret } = integrationDoc.data()!;
   const razorpay = new Razorpay({
-    key_id: keyId,
-    key_secret: keySecret,
+    key_id: razorpayKeyId,
+    key_secret: razorpaySecret,
   });
 
   try {
@@ -58,18 +58,18 @@ export async function verifyRazorpayPayment({
   signature,
   userId,
 }: VerifyPaymentParams) {
-  const integrationDoc = await db.collection('users').doc(userId).collection('integrations').doc('razorpay').get();
+  const integrationDoc = await db.collection('users').doc(userId).collection('settings').doc('payment').get();
   
   if (!integrationDoc.exists) {
     throw new Error('Razorpay not connected');
   }
 
-  const { keySecret } = integrationDoc.data()!;
+  const { razorpaySecret } = integrationDoc.data()!;
 
   const body = orderId + '|' + paymentId;
 
   const expectedSignature = crypto
-    .createHmac('sha256', keySecret)
+    .createHmac('sha256', razorpaySecret)
     .update(body.toString())
     .digest('hex');
 

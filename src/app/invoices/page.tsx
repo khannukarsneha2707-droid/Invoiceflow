@@ -24,7 +24,6 @@ import {
   Filter,
   User,
   Trash,
-  Copy,
   Users,
   BellRing,
   History
@@ -170,12 +169,6 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleCopyLink = (invoiceId: string) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const link = `${origin}/invoice/${invoiceId}`;
-    navigator.clipboard.writeText(link);
-    toast({ title: "Link Copied", description: "Payment link copied to clipboard." });
-  };
 
   const sendReminderWithPDF = async (invoice: any) => {
     if (!firestore || !user) return;
@@ -384,9 +377,6 @@ export default function InvoicesPage() {
                                 {isSending === invoice.id ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <BellRing className="mr-2 h-3 w-3" />} Send Reminder
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem className="cursor-pointer font-bold" onSelect={() => handleCopyLink(invoice.id!)}>
-                              <Copy className="mr-2 h-3 w-3" /> Copy Link
-                            </DropdownMenuItem>
                             <DropdownMenuItem className="cursor-pointer font-bold" onSelect={() => generateInvoicePDF(invoice, profile)}>
                               <Download className="mr-2 h-3 w-3" /> Download PDF
                             </DropdownMenuItem>
